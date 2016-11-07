@@ -17,13 +17,15 @@ def add_friend(msg):
 
 @itchat.msg_register(TEXT)
 def text_reply(msg):
-    text = itchat.send(msg['Text'], msg['FromUserName'])
+    replay_text = tuling.replay_text(msg['Text'],
+            msg['FromUserName']) or '系统错误'
+    text = itchat.send(replay_text, msg['FromUserName'])
 
 
 @itchat.msg_register(TEXT, isGroupChat=True)
 def groupchat_reply(msg):
     if msg['isAt']:
-        replay_text = tuling.replay_text(msg['Content'],
+        replay_text = tuling.replay_text(msg['Text'],
                 msg['ActualNickName']) or '系统错误'
         itchat.send(replay_text, msg['FromUserName'])
 
