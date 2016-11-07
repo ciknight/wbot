@@ -2,12 +2,15 @@
 
 import requests
 
+from .meta_singleton import MetaSingleton
+
 
 class TuLing(object):
     """
     Tuling robot http://www.tuling123.com
     Doc http://www.tuling123.com/help/h_cent_webapi.jhtml
     """
+    __metaclass__ = MetaSingleton
     API_URL = 'http://www.tuling123.com/openapi/api'
 
     SUB_TYPE_TEXT = 100000
