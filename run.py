@@ -22,7 +22,9 @@ def text_reply(msg):
     if faq.invite_key in msg['Text'].upper():
         # TODO Modify add_member_into_chatroom
         invite_friend = [{'UserName': msg['FromUserName']}]
-        result = itchat.add_member_into_chatroom(faq.group_name,
+        grouproom = itchat.search_chatrooms(name=faq.group_name)
+        grouproom = grouproom and grouproom[0] or None
+        result = itchat.add_member_into_chatroom(grouproom.get('UserName'),
                 invite_friend, useInvitation=True)
         # invite success
         if result['BaseResponse']['Ret'] == 0:
