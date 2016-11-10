@@ -1,14 +1,18 @@
-import os, time, copy
+# -*- coding: utf-8 -*-
+import copy
+import os
+import time
 
 class Storage:
     def __init__(self):
-        self.userName          = None
-        self.nickName          = None
-        self.memberList        = []
-        self.mpList            = []
-        self.chatroomList      = []
-        self.msgList           = []
+        self.userName = None
+        self.nickName = None
+        self.memberList = []
+        self.mpList = []
+        self.chatroomList = []
+        self.msgList = []
         self.lastInputUserName = None
+
     def dumps(self):
         return {
             'userName'          : self.userName,
@@ -17,6 +21,7 @@ class Storage:
             'mpList'            : self.mpList,
             'chatroomList'      : self.chatroomList,
             'lastInputUserName' : self.lastInputUserName, }
+
     def loads(self, j):
         self.userName          = j.get('userName', None)
         self.nickName          = j.get('nickName', None)
@@ -27,6 +32,7 @@ class Storage:
         del self.chatroomList[:]
         for i in j.get('chatroomList', []): self.chatroomList.append(i)
         self.lastInputUserName = j.get('lastInputUserName', None)
+
     def search_friends(self, name=None, userName=None, remarkName=None, nickName=None,
             wechatAccount=None):
         if (name or userName or remarkName or nickName or wechatAccount) is None:
@@ -56,6 +62,7 @@ class Storage:
                 return copy.deepcopy(friendList)
             else:
                 return copy.deepcopy(contract)
+
     def search_chatrooms(self, name=None, userName=None):
         if userName is not None:
             for m in self.chatroomList:
@@ -65,6 +72,7 @@ class Storage:
             for m in self.chatroomList:
                 if name in m['NickName']: matchList.append(copy.deepcopy(m))
             return matchList
+
     def search_mps(self, name=None, userName=None):
         if userName is not None:
             for m in self.mpList:

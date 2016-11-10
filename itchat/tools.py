@@ -1,4 +1,14 @@
-import re, os, sys, subprocess, copy
+# -*- coding: utf-8 -*-
+import copy
+import os
+import re
+import subprocess
+import sys
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 try:
     from HTMLParser import HTMLParser
@@ -6,6 +16,7 @@ except ImportError:
     from html.parser import HTMLParser
 
 from . import config
+
 
 emojiRegex = re.compile(r'<span class="emoji emoji(.{1,10})"></span>')
 htmlParser = HTMLParser()
@@ -17,9 +28,10 @@ except UnicodeEncodeError:
     BLOCK = 'MM'
 else:
     BLOCK = b
+
 friendInfoTemplate = {}
 for k in ('UserName', 'City', 'DisplayName', 'PYQuanPin', 'RemarkPYInitial', 'Province',
-    'KeyWord', 'RemarkName', 'PYInitial', 'EncryChatRoomId', 'Alias', 'Signature', 
+    'KeyWord', 'RemarkName', 'PYInitial', 'EncryChatRoomId', 'Alias', 'Signature',
     'NickName', 'RemarkPYQuanPin', 'HeadImgUrl'): friendInfoTemplate[k] = ''
 for k in ('UniFriend', 'Sex', 'AppAccountFlag', 'VerifyFlag', 'ChatRoomId', 'HideInputBarFlag',
     'AttrStatus', 'SnsFlag', 'MemberCount', 'OwnerUin', 'ContactFlag', 'Uin',
@@ -28,6 +40,7 @@ friendInfoTemplate['MemberList'] = []
 
 def clear_screen():
     os.system('cls' if config.OS == 'Windows' else 'clear')
+
 def emoji_formatter(d, k):
     # _emoji_deebugger is for bugs about emoji match caused by wechat backstage
     # like :face with tears of joy: will be replaced with :cat face with tears of joy:
@@ -41,6 +54,7 @@ def emoji_formatter(d, k):
                 '1f63d': '1f618', '1f64e': '1f621', '1f63f': '1f622',
                 }.get(m.group(1), m.group(1)))
         return emojiRegex.sub(__fix_miss_match, s)
+
     def _emoji_formatter(m):
         s = m.group(1)
         if len(s) == 6:
@@ -54,16 +68,19 @@ def emoji_formatter(d, k):
                 ).encode('utf8').decode('unicode-escape', 'replace')
     d[k] = _emoji_debugger(d, k)
     d[k] = emojiRegex.sub(_emoji_formatter, d[k])
+
 def msg_formatter(d, k):
     emoji_formatter(d, k)
     d[k] = d[k].replace('<br/>', '\n')
     d[k]  = htmlParser.unescape(d[k])
+
 def check_file(fileDir):
     try:
         with open(fileDir): pass
         return True
     except:
         return False
+
 def print_qr(fileDir):
     if config.OS == 'Darwin':
         subprocess.call(['open', fileDir])
@@ -71,13 +88,13 @@ def print_qr(fileDir):
         subprocess.call(['xdg-open', fileDir])
     else:
         os.startfile(fileDir)
-try:
-    from PIL import Image
-    def print_cmd_qr(fileDir, size = 37, padding = 3,
-            white = BLOCK, black = '  ', enableCmdQR = True):
-        img     = Image.open(fileDir)
-        times   = img.size[0] / (size + padding * 2)
-        rgb     = img.convert('RGB')
+
+def print_cmd_qr(fileDir, size=37, padding=3,
+        white=BLOCK, black='  ', enableCmdQR=True):
+    if Image:
+        img = Image.open(fileDir)
+        rgb = img.convert('RGB')
+        times = img.size[0] / (size + padding * 2)
         try:
             blockCount = int(enableCmdQR)
             assert(0 < abs(blockCount))
@@ -86,6 +103,7 @@ try:
         finally:
             white *= abs(blockCount)
             if blockCount < 0: white, black = black, white
+
         sys.stdout.write(' '*50 + '\r')
         sys.stdout.flush()
         qr = white * (size + 2) + '\n'
@@ -96,13 +114,13 @@ try:
                 r,g,b = rgb.getpixel(((x + startPoint) * times, (y + startPoint) * times))
                 qr += white if r > 127 else black
             qr += white + '\n'
+
         qr += white * (size + 2) + '\n'
         sys.stdout.write(qr)
-except ImportError:
-    def print_cmd_qr(fileDir, size = 37, padding = 3,
-            white = BLOCK, black = '  ', enableCmdQR = True):
+    else:
         print('pillow should be installed to use command line QRCode: pip install pillow')
         print_qr(fileDir)
+
 def struct_friend_info(knownInfo):
     member = copy.deepcopy(friendInfoTemplate)
     for k, v in copy.deepcopy(knownInfo).items(): member[k] = v

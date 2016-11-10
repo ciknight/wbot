@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 
 from .client import client
@@ -8,6 +9,7 @@ __version__ = '1.1.19'
 __client = client()
 HOT_RELOAD = False
 HOT_RELOAD_DIR = 'itchat.pkl'
+
 
 def auto_login(hotReload=False, statusStorageDir='itchat.pkl',
         enableCmdQR=False, picDir=None):
@@ -29,12 +31,10 @@ def check_login(uuid=None, picDir=None): return __client.check_login(uuid, picDi
 def web_init(): return __client.web_init()
 def show_mobile_login(): return __client.show_mobile_login()
 def start_receiving(): return __client.start_receiving()
-# <<<
 
 # The following methods are for reload without re-scan the QRCode >>>
 def dump_login_status(fileDir='itchat.pkl'): return __client.dump_login_status(fileDir)
 def load_login_status(fileDir='itchat.pkl'): return __client.load_login_status(fileDir)
-# <<<
 
 # The following methods are for contract dealing >>>
 def get_friends(update=False): return __client.get_friends(update)
@@ -52,12 +52,10 @@ def create_chatroom(memberList, topic = ''): return __client.create_chatroom(mem
 def set_chatroom_name(chatroomUserName, name): return __client.set_chatroom_name(chatroomUserName, name)
 def delete_member_from_chatroom(chatroomUserName, memberList): return __client.delete_member_from_chatroom(chatroomUserName, memberList)
 def add_member_into_chatroom(chatroomUserName, memberList, useInvitation=False): return __client.add_member_into_chatroom(chatroomUserName, memberList, useInvitation)
-# <<<
 
 # The following is the tear of age, will be deleted soon
 def get_contract(update=False): return __client.get_friends(update)
 def get_batch_contract(groupUserName): return __client.update_chatroom(groupUserName)
-# <<<
 
 # if toUserName is set to None, msg will be sent to yourself
 def send_raw_msg(msgType, content, toUserName): return __client.send_raw_msg(msgType, content, toUserName)
