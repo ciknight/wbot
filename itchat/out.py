@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 import sys
 
 from . import config
+
 
 def print_line(msg, oneLine = False):
     if oneLine:
