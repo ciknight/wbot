@@ -18,5 +18,8 @@ class Interpreter(object):
         if not cmd: return u'脚本不能为空'
 
         command = [u"python", u"-c", cmd]
-        result = subprocess.check_output(command) or u'执行成功'
+        try:
+            result = subprocess.check_output(command) or u'执行成功'
+        except:
+            return u'执行错误'
         return isinstance(result, str) and result.decode('utf-8') or result
