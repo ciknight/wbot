@@ -5,7 +5,7 @@ from __future__ import  unicode_literals
 
 import itchat
 from itchat.content import *
-from bot import faq, tuling
+from bot import faq, interpreter, tuling
 
 REPLAY_ERROR_TEXT = '系统错误'
 
@@ -42,6 +42,9 @@ def text_reply(msg):
 
 @itchat.msg_register(TEXT, isGroupChat=True)
 def groupchat_reply(msg):
+    if msg['Text'][0] == interpreter.PY_SYMBLOE:
+        replay_text = interpreter.run_py_cmd(msg['Text'][1:])
+        itchat.send(replay_text, msg['FromUserName'])
     if msg['isAt']:
         replay_text = tuling.replay_text(msg['Text'],
                 msg['ActualNickName']) or '系统错误'
