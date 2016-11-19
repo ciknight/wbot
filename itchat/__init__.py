@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import time
 
-from .client import client
-from . import content # this is for creating pyc
+import gevent
 
-__version__ = '1.1.19'
+from .client import client
+from . import content  # this is for creating pyc
+
+__version__ = '1.2.0'
 
 __client = client()
 HOT_RELOAD = False
@@ -59,7 +61,7 @@ def get_batch_contract(groupUserName): return __client.update_chatroom(groupUser
 
 # if toUserName is set to None, msg will be sent to yourself
 def send_raw_msg(msgType, content, toUserName): return __client.send_raw_msg(msgType, content, toUserName)
-def send_msg(msg = 'Test Message', toUserName = None): return __client.send_msg(msg, toUserName)
+def send_msg(msg='Test Message', toUserName=None): return __client.send_msg(msg, toUserName)
 def send_file(fileDir, toUserName): return __client.send_file(fileDir, toUserName)
 def send_video(fileDir, toUserName): return __client.send_video(fileDir, toUserName)
 def send_image(fileDir, toUserName): return __client.send_image(fileDir, toUserName)
@@ -78,23 +80,6 @@ def send(msg, toUserName = None):
 
 # decorations
 __functionDict = {'FriendChat': {}, 'GroupChat': {}, 'MpChat': {}}
-def configured_reply():
-    ''' determine the type of message and reply if its method is defined
-        however, I use a strange way to determine whether a msg is from massive platform
-        I haven't found a better solution here
-        The main problem I'm worrying about is the mismatching of new friends added on phone
-        If you have any good idea, pleeeease report an issue. I will be more than grateful. '''
-    if not __client.storageClass.msgList: return
-    msg = __client.storageClass.msgList.pop()
-    if '@@' in msg['FromUserName']:
-        replyFn = __functionDict['GroupChat'].get(msg['Type'])
-        if replyFn: send(replyFn(msg), msg.get('FromUserName'))
-    elif search_mps(userName=msg['FromUserName']):
-        replyFn = __functionDict['MpChat'].get(msg['Type'])
-        if replyFn: send(replyFn(msg), msg.get('FromUserName'))
-    else:
-        replyFn = __functionDict['FriendChat'].get(msg['Type'])
-        if replyFn: send(replyFn(msg), msg.get('FromUserName'))
 
 def msg_register(msgType, isFriendChat=False, isGroupChat=False, isMpChat=False):
     ''' a decorator constructor
@@ -112,14 +97,44 @@ def msg_register(msgType, isFriendChat=False, isGroupChat=False, isMpChat=False)
                 __functionDict['FriendChat'][_msgType] = fn
     return _msg_register
 
+def __configured_reply():
+    ''' determine the type of message and reply if its method is defined
+        however, I use a strange way to determine whether a msg is from massive platform
+        I haven't found a better solution here
+        The main problem I'm worrying about is the mismatching of new friends added on phone
+        If you have any good idea, pleeeease report an issue. I will be more than grateful. '''
+    if not __client.storageClass.msgList: return
+    msg = __client.storageClass.msgList.pop()
+    if '@@' in msg['FromUserName']:
+        replyFn = __functionDict['GroupChat'].get(msg['Type'])
+        if replyFn: send(replyFn(msg), msg.get('FromUserName'))
+    elif search_mps(userName=msg['FromUserName']):
+        replyFn = __functionDict['MpChat'].get(msg['Type'])
+        if replyFn: send(replyFn(msg), msg.get('FromUserName'))
+    else:
+        replyFn = __functionDict['FriendChat'].get(msg['Type'])
+        if replyFn: send(replyFn(msg), msg.get('FromUserName'))
+
+def configured_reply(sleep=.3):
+    while 1:
+        __configured_reply()
+        gevent.sleep(sleep)
+
+def heart_beats(sleep=60):
+    while 1:
+        __client.send_msg(
+            toUserName=__client.get_friends()[0]["UserName"])
+        gevent.sleep(sleep)
+
 # in-build run
 def run(debug=True):
     print('Start auto replying')
     __client.debug = debug
     try:
-        while 1:
-            configured_reply()
-            time.sleep(.3)
+        gevent.joinall([
+                gevent.spawn(configured_reply),
+                gevent.spawn(heart_beats),
+        ])
     except KeyboardInterrupt:
         if HOT_RELOAD: __client.dump_login_status(HOT_RELOAD_DIR)
         print('Bye~')
