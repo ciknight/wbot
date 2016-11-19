@@ -19,6 +19,8 @@ def add_friend(msg):
 
 @itchat.msg_register(TEXT)
 def text_reply(msg):
+    if msg["FromUserName"] == itchat.get_friends()[0]["UserName"]:
+        return
     if faq.invite_key in msg['Text'].upper():
         # TODO Modify add_member_into_chatroom
         invite_friend = [{'UserName': msg['FromUserName']}]
