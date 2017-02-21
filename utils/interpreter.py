@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 
-import subprocess
-
-from .meta_singleton import MetaSingleton
-
 
 class Interpreter(object):
-    __metaclass__ = MetaSingleton
-
     PY_SYMBLOE = '#'
 
     def __init___(self, *args, **kwargs):
         super(Interpreter, self).__init__()
 
-    def run_py_cmd(self, cmd):
+    @staticmethod
+    def run_py_cmd(cmd):
         cmd = cmd.strip()
-        if not cmd: return u'脚本不能为空'
+        if not cmd: return u'空指令'
 
-        command = [u"python", u"-c", cmd]
         try:
-            result = subprocess.check_output(command) or u'执行成功'
+            # eval("eval('__import__(\"os\")')", {'__builtins__':__builtins__, "__import__": None})))"
+            result = eval(cmd, {'__builtins__':__builtins__, '__import__': None})
         except:
             return u'执行错误'
         return isinstance(result, str) and result.decode('utf-8') or result
