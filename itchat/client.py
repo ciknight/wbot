@@ -1,17 +1,27 @@
 # -*- coding: utf-8 -*-
-import os, sys, time, re, io
-import threading, subprocess
-import json, xml.dom.minidom, mimetypes
-import copy, pickle, random
+import copy
+import json
+import io
+import logging
+import mimetypes
+import os
+import pickle
+import random
+import re
+import sys
+import time
+import threading
 import traceback
+import xml.dom.minidom
 
 import requests
 
-from . import config, storage, out, tools
+from . import config, storage, tools
 
 BASE_URL = config.BASE_URL
 APPID = config.APPID
 QR_DIR = 'QR.jpg'
+
 
 class client(object):
 
@@ -25,15 +35,17 @@ class client(object):
         self.loginInfo = {}
         self.s = requests.Session()
         self.uuid = None
-        self.debug = False
+        self.debug = True
 
     # >>> storage
     def dump_login_status(self, fileDir):
         try:
-            with open(fileDir, 'w') as f: f.write('DELETE THIS')
+            with open(fileDir, 'w') as f:
+                f.write('DELETE THIS')
             os.remove(fileDir)
         except:
             raise Exception('Incorrect fileDir')
+
         status = {
             'loginInfo' : self.loginInfo,
             'cookies'   : self.s.cookies.get_dict(),
@@ -47,6 +59,7 @@ class client(object):
                 j = pickle.load(f)
         except Exception as e:
             return False
+
         self.loginInfo = j['loginInfo']
         self.s.cookies = requests.utils.cookiejar_from_dict(j['cookies'])
         self.storageClass.loads(j['storage'])
@@ -61,17 +74,18 @@ class client(object):
             if msgList:
                 msgList = self.__produce_msg(msgList)
                 for msg in msgList: self.msgList.insert(0, msg)
-            out.print_line('Login successfully as %s\n'%self.storageClass.nickName, True)
+            logging.info('Login success as {}'.format(self.storageClass.nickName))
             self.start_receiving()
             return True
     # >>> end storage
 
     # >>> login
-    def get_QRuuid(self):
+    def __get_QRuuid(self):
         url = '%s/jslogin'%BASE_URL
         payloads = {
             'appid' : self.appid,
-            'fun'   : 'new', }
+            'fun'   : 'new'
+        }
         r = self.s.get(url, params=payloads)
         regx = r'window.QRLogin.code = (\d+); window.QRLogin.uuid = "(\S+?)";'
         data = re.search(regx, r.text)
@@ -88,6 +102,7 @@ class client(object):
             with open(picDir, 'wb') as f: f.write(r.content)
         except:
             return False
+
         if enableCmdQR:
             tools.print_cmd_qr(picDir, enableCmdQR = enableCmdQR)
         else:
@@ -99,7 +114,7 @@ class client(object):
 
         url = '%s/cgi-bin/mmwebwx-bin/login'%BASE_URL
         payloads = 'tip=1&uuid=%s&_=%s'%(uuid, int(time.time()))
-        r = self.s.get(url, params = payloads)
+        r = self.s.get(url, params=payloads)
         regx = r'window.code=(\d+)'
         data = re.search(regx, r.text)
 
@@ -115,7 +130,9 @@ class client(object):
                     ("wx8.qq.com"      , ("file.wx8.qq.com", "webpush.wx8.qq.com")),
                     ("qq.com"          , ("file.wx.qq.com", "webpush.wx.qq.com")),
                     ("web2.wechat.com" , ("file.web2.wechat.com", "webpush.web2.wechat.com")),
-                    ("wechat.com"      , ("file.web.wechat.com", "webpush.web.wechat.com"))):
+                    ("wechat.com"      , ("file.web.wechat.com", "webpush.web.wechat.com"))
+            ):
+
                 fileUrl, syncUrl = ['https://%s/cgi-bin/mmwebwx-bin' % url for url in detailedUrl]
                 if indexUrl in self.loginInfo['url']:
                     self.loginInfo['fileUrl'], self.loginInfo['syncUrl'] = \
@@ -124,7 +141,7 @@ class client(object):
             else:
                 self.loginInfo['fileUrl'] = self.loginInfo['syncUrl'] = self.loginInfo['url']
 
-            self.loginInfo['deviceid'] = 'e' + repr(random.random())[2:17]
+            self.loginInfo['deviceid'] = 'e' + str(random.random())[2:17]
             self.loginInfo['msgid'] = int(time.time() * 1000)
             self.loginInfo['BaseRequest'] = {}
             for node in xml.dom.minidom.parseString(r.text).documentElement.childNodes:
@@ -169,9 +186,10 @@ class client(object):
                 'ClientMsgId': int(time.time()),
                 }
         headers = {'ContentType': 'application/json; charset=UTF-8'}
-        r = self.s.post(url, data = json.dumps(payloads), headers = headers)
+        r = self.s.post(url, data=json.dumps(payloads), headers=headers)
 
     def get_contact(self, update=False):
+        logging.info('Getting contact list...')
         if 1 < len(self.memberList) and not update: return copy.deepcopy(self.memberList)
         url = '%s/webwxgetcontact?r=%s&seq=0&skey=%s' % (self.loginInfo['url'],
             int(time.time()), self.loginInfo['skey'])
@@ -214,10 +232,12 @@ class client(object):
             'uin'      : self.loginInfo['wxuin'],
             'deviceid' : self.loginInfo['deviceid'],
             'synckey'  : self.loginInfo['synckey'],
-            '_'        : int(time.time() * 1000),}
+            '_'        : int(time.time() * 1000)
+        }
         r = self.s.get(url, params=params)
         regx = r'window.synccheck={retcode:"(\d+)",selector:"(\d+)"}'
         pm = re.search(regx, r.text)
+        # selector != '0'
         if pm is None or pm.group(1) != '0' : return None
         return pm.group(2)
 
@@ -238,11 +258,13 @@ class client(object):
                 except requests.exceptions.RequestException as e:
                     count += 1
                     if self.debug: traceback.print_exc()
-                    time.sleep(count * 3)
+                    time.sleep(count * 2)
                 except Exception as e:
-                    out.print_line(str(e), False)
-                    if self.debug: traceback.print_exc()
-            out.print_line('LOG OUT', False)
+                    logging.error(str(e))
+                    logging.debug(traceback.print_exc())
+
+            logging.info('Logout')
+
         maintainThread = threading.Thread(target=maintain_loop)
         maintainThread.setDaemon(True)
         maintainThread.start()
@@ -250,14 +272,18 @@ class client(object):
     def auto_login(self, enableCmdQR=False, picDir=None):
         def open_QR():
             for get_count in range(10):
-                out.print_line('Getting uuid', True)
-                while not self.get_QRuuid(): time.sleep(1)
-                out.print_line('Getting QR Code', True)
-                if self.get_QR(enableCmdQR=enableCmdQR, picDir=picDir): break
+                logging.info('Getting uuid')
+                while not self.__get_QRuuid():
+                    time.sleep(1)
+
+                logging.info('Getting QR Code')
+                if self.get_QR(enableCmdQR=enableCmdQR, picDir=picDir):
+                    break
                 elif 9 <= get_count:
-                    out.print_line('Failed to get QR Code, please restart the program')
+                    logging.error('Failed to get QR Code, please restart the program')
                     sys.exit()
-            out.print_line('Please scan the QR Code', True)
+
+            logging.info('Please scan the QR Code', True)
 
         open_QR()
         while 1:
@@ -265,16 +291,15 @@ class client(object):
             if status == '200':
                 break
             elif status == '201':
-                out.print_line('Please press confirm', True)
+                logging.info('Please press confirm by phone')
             elif status == '408':
-                out.print_line('Reloading QR Code\n', True)
+                logging.info('Reloading QR Code\n')
                 open_QR()
 
         self.web_init()
         self.show_mobile_login()
         tools.clear_screen()
         self.get_contact(True)
-        out.print_line('Login successfully as %s\n'%self.storageClass.nickName, False)
         self.start_receiving()
     # >>> end login
 
@@ -480,7 +505,8 @@ class client(object):
         payloads = {
             'BaseRequest': self.loginInfo['BaseRequest'],
             'SyncKey': self.loginInfo['SyncKey'],
-            'rr': int(time.time()), }
+            'rr': int(time.time())
+        }
         headers = { 'ContentType': 'application/json; charset=UTF-8' }
         r = self.s.post(url, data = json.dumps(payloads), headers = headers)
         dic = json.loads(r.content.decode('utf-8', 'replace'))
@@ -632,11 +658,13 @@ class client(object):
                     'Type': 'Useless',
                     'Text': 'UselessMsg', }
             else:
-                out.print_line('MsgType Unknown: %s\n%s'%(m['MsgType'], str(m)), False)
+                logging.warn('MsgType Unknown: {}\n{}'.format(m['MsgType'], str(m)))
                 srl.append(m['MsgType'])
                 msg = {
                     'Type': 'Useless',
-                    'Text': 'UselessMsg', }
+                    'Text': 'UselessMsg'
+                }
+
             m = dict(m, **msg)
             rl.append(m)
         return rl
@@ -656,15 +684,12 @@ class client(object):
         msg['ActualNickName'] = member['DisplayName'] or member['NickName']
         msg['Content']        = content
         tools.msg_formatter(msg, 'Content')
-        atFlag = '@' + (chatroom['self']['DisplayName']
-            or self.storageClass.nickName)
+        atFlag = '@' + (chatroom['self']['DisplayName'] or self.storageClass.nickName)
         msg['isAt'] = (
             (atFlag + (u'\u2005' if u'\u2005' in msg['Content'] else ' '))
-            in msg['Content']
-            or
-            msg['Content'].endswith(atFlag))
+            in msg['Content'] or msg['Content'].endswith(atFlag))
 
-    def send_raw_msg(self, msgType, content, toUserName):
+    def __send_raw_msg(self, msgType, content, toUserName):
         url = '%s/webwxsendmsg'%self.loginInfo['url']
         payloads = {
             'BaseRequest': self.loginInfo['BaseRequest'],
@@ -682,7 +707,7 @@ class client(object):
         return r.json()
 
     def send_msg(self, msg='Test Message', toUserName=None):
-        r = self.send_raw_msg(1, msg, toUserName)
+        r = self.__send_raw_msg(1, msg, toUserName)
         return r['BaseResponse']['Ret'] == 0
 
     def __upload_file(self, fileDir, isPicture = False, isVideo = False):
@@ -815,8 +840,3 @@ class client(object):
         if picDir is None: return tempStorage.getvalue()
         with open(picDir, 'wb') as f: f.write(tempStorage.getvalue())
     # >>> end msg function
-
-
-if __name__ == '__main__':
-    wcc = WeChatClient()
-    wcc.login()

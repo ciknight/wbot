@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import time
 
 import gevent
@@ -26,7 +27,6 @@ def auto_login(hotReload=False, statusStorageDir='itchat.pkl',
         HOT_RELOAD = False
 
 # The following method are all included in __client.auto_login >>>
-def get_QRuuid(): return __client.get_QRuuid()
 def get_QR(uuid=None, enableCmdQR=False, picDir=None):
     return __client.get_QR(uuid, enableCmdQR, picDir)
 def check_login(uuid=None, picDir=None): return __client.check_login(uuid, picDir)
@@ -60,7 +60,6 @@ def get_contract(update=False): return __client.get_friends(update)
 def get_batch_contract(groupUserName): return __client.update_chatroom(groupUserName)
 
 # if toUserName is set to None, msg will be sent to yourself
-def send_raw_msg(msgType, content, toUserName): return __client.send_raw_msg(msgType, content, toUserName)
 def send_msg(msg='Test Message', toUserName=None): return __client.send_msg(msg, toUserName)
 def send_file(fileDir, toUserName): return __client.send_file(fileDir, toUserName)
 def send_video(fileDir, toUserName): return __client.send_video(fileDir, toUserName)
@@ -128,7 +127,7 @@ def heart_beats(sleep=60):
 
 # in-build run
 def run(debug=True):
-    print('Start auto replying')
+    logging.info('Start auto replying')
     __client.debug = debug
     try:
         gevent.joinall([
@@ -137,4 +136,4 @@ def run(debug=True):
         ])
     except KeyboardInterrupt:
         if HOT_RELOAD: __client.dump_login_status(HOT_RELOAD_DIR)
-        print('Bye~')
+        logging.info('Bye~')
