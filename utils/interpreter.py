@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+import sys
+
+
+class TextArea(object):
+
+    def __init__(self):
+        self.buffer = []
+
+    def write(self, *args, **kwargs):
+        self.buffer.append(args)
 
 
 class Interpreter(object):
@@ -10,11 +20,14 @@ class Interpreter(object):
     @staticmethod
     def run_py_cmd(cmd):
         cmd = cmd.strip()
-        if not cmd: return u'空指令'
+        if not cmd: return 'NULL'
 
         try:
             # eval("eval('__import__(\"os\")')", {'__builtins__':__builtins__, "__import__": None})))"
-            result = eval(cmd, {'__builtins__':__builtins__, '__import__': None})
+            stdout = sys.stdout
+            sys.stdout = TextArea()
+            eval(cmd, {'__builtins__':__builtins__, '__import__': None})
+            text_area, sys.stdout = sys.stdout, stdout
+            return ''.join([''.join(text) for text in text_area.buffer])
         except:
-            return u'执行错误'
-        return isinstance(result, str) and result.decode('utf-8') or result
+            return '执行错误'

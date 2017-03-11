@@ -23,7 +23,12 @@ def add_friend(msg):
 
 @itchat.msg_register(TEXT)
 def text_reply(msg):
+    if  msg['FromUserName'] == '@046be09334d1b7580027e688768e9010':
+            itchat.send('你已被拉黑', msg['FromUserName'])
+            return
+
     nickName = itchat.search_friends(userName=msg['FromUserName']).get('NickName', 'Unknown')
+    logging.info('{}-{} send: {}'.format(nickName, msg['FromUserName'], msg['Content']))
     if msg["FromUserName"] == itchat.get_friends()[0]["UserName"]:
         # dont replay self
         return
@@ -40,7 +45,6 @@ def text_reply(msg):
         # invite success
         if result['BaseResponse']['Ret'] == 0:
             logging.info('invite user {}-{} successful'.format(nickName, msg['FromUserName']))
-            # TODO can not return Bool
         else:
             logging.error('invite user {}-{} failed'.format(nickName, msg['FromUserName']))
             itchat.send(REPLAY_ERROR_TEXT, msg['FromUserName'])
@@ -50,11 +54,16 @@ def text_reply(msg):
                 msg['FromUserName']) or REPLAY_ERROR_TEXT
         logging.info('tuling replay user {}-{}: {}'.format(nickName, msg['FromUserName'], replay_text))
         itchat.send(replay_text, msg['FromUserName'])
+
+    # TODO can not return Bool
     return
 
 
 @itchat.msg_register(TEXT, isGroupChat=True)
 def groupchat_reply(msg):
+    # TODO
+    #nickName = itchat.search_friends(userName=msg['FromUserName']).get('NickName', 'Unknown')
+    #logging.info('group xxx: {}-{} send: {}'.format(nickName, msg['FromUserName'], msg))
     if msg['Text'][0] == interpreter.PY_SYMBLOE:
         replay_text = interpreter.run_py_cmd(msg['Text'][1:])
         itchat.send(replay_text, msg['FromUserName'])
