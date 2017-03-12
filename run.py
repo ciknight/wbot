@@ -72,6 +72,21 @@ def groupchat_reply(msg):
         itchat.send(replay_text, msg['FromUserName'])
 
 
+@itchat.msg_register(RECALL, isGroupChat=True)
+def group_callback(msg):
+    key = '{}:{}'.format(msg['FromUserName'], msg['RefMsgId'])
+    groupNmae = itchat.search_chatrooms(userName=msg['FromUserName']).get('NickName')
+    try:
+        replay_text = '{} recall message is {}'.format(msg['ActualNickName'], itchat.get_cache(key))
+        logging.info('group {}: {}: recall message is {}'.format(
+            groupNmae, msg['ActualNickName'], replay_text))
+    except KeyError as e:
+        logging.error('Keyerror {}'.format(str(e)))
+        return
+
+    itchat.send(replay_text, msg['FromUserName'])
+
+
 if __name__ == '__main__':
     itchat.auto_login(enableCmdQR=2, hotReload=True)
     itchat.run()

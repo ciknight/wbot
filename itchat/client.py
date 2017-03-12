@@ -13,6 +13,7 @@ import time
 import threading
 import traceback
 import xml.dom.minidom
+import xmltodict
 
 import requests
 
@@ -295,7 +296,7 @@ class client(object):
             elif status == '408':
                 logging.info('Reloading QR Code\n')
                 open_QR()
-            time.sleep(.3)
+            time.sleep(.5)
 
         self.web_init()
         self.show_mobile_login()
@@ -659,12 +660,15 @@ class client(object):
                     'Type': 'Note',
                     'Text': m['Content'],}
             elif m['MsgType'] == 10002:
+                # callback
                 regx = r'\[CDATA\[(.+?)\]\]'
                 data = re.search(regx, m['Content'])
                 data = 'System message' if data is None else data.group(1).replace('\\', '')
+                d = xmltodict.parse(m['Content'])
                 msg = {
-                    'Type': 'Note',
-                    'Text': data, }
+                    'Type': 'RECALL',
+                    'Text': data,
+                    'RefMsgId': d['sysmsg']['revokemsg']['msgid'], }
             elif m['MsgType'] in srl:
                 msg = {
                     'Type': 'Useless',

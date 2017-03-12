@@ -5,7 +5,8 @@ import time
 import gevent
 
 from .client import client
-from . import content  # this is for creating pyc
+from . import cache
+from . import content
 
 __version__ = '1.2.0'
 
@@ -26,6 +27,8 @@ def auto_login(hotReload=False, statusStorageDir='itchat.pkl',
         __client.auto_login(enableCmdQR=enableCmdQR, picDir=picDir)
         HOT_RELOAD = False
 
+def set_cache(key, value): cache.set_cache(key, value)
+def get_cache(key): return cache.get_cache(key)
 # The following method are all included in __client.auto_login >>>
 def get_QR(uuid=None, enableCmdQR=False, picDir=None):
     return __client.get_QR(uuid, enableCmdQR, picDir)
@@ -106,6 +109,10 @@ def __configured_reply():
     if not __client.storageClass.msgList: return
     msg = __client.storageClass.msgList.pop()
     if '@@' in msg['FromUserName']:
+        if msg['Type'] != content.RECALL:
+            # save cache
+            key = '{}:{}'.format(msg['FromUserName'], msg['MsgId'])
+            set_cache(key, msg['Content'])
         replyFn = __functionDict['GroupChat'].get(msg['Type'])
         if replyFn: send(replyFn(msg), msg.get('FromUserName'))
     elif search_mps(userName=msg['FromUserName']):
