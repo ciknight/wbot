@@ -295,6 +295,7 @@ class client(object):
             elif status == '408':
                 logging.info('Reloading QR Code\n')
                 open_QR()
+            time.sleep(.3)
 
         self.web_init()
         self.show_mobile_login()
@@ -383,6 +384,17 @@ class client(object):
             'DelMemberList': ','.join([member['UserName'] for member in memberList]), }
         headers = {'content-type': 'application/json; charset=UTF-8'}
         return self.s.post(url, data=json.dumps(params),headers=headers).json()
+
+    def set_pinned(self, userName, isPinned=True):
+        url = '%s/webwxoplog?pass_ticket=%s' % (
+            self.loginInfo['url'], self.loginInfo['pass_ticket'])
+        data = {
+            'UserName'    : userName,
+            'CmdId'       : 3,
+            'OP'          : int(isPinned),
+            'BaseRequest' : self.loginInfo['BaseRequest'], }
+        headers = { 'User-Agent' : config.USER_AGENT }
+        return self.s.post(url, json=data, headers=headers)
 
     def add_member_into_chatroom(self, chatroomUserName, memberList,
             useInvitation=False):

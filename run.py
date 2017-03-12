@@ -23,10 +23,6 @@ def add_friend(msg):
 
 @itchat.msg_register(TEXT)
 def text_reply(msg):
-    if  msg['FromUserName'] == '@046be09334d1b7580027e688768e9010':
-            itchat.send('你已被拉黑', msg['FromUserName'])
-            return
-
     nickName = itchat.search_friends(userName=msg['FromUserName']).get('NickName', 'Unknown')
     logging.info('{}-{} send: {}'.format(nickName, msg['FromUserName'], msg['Content']))
     if msg["FromUserName"] == itchat.get_friends()[0]["UserName"]:
@@ -61,15 +57,18 @@ def text_reply(msg):
 
 @itchat.msg_register(TEXT, isGroupChat=True)
 def groupchat_reply(msg):
-    # TODO
-    #nickName = itchat.search_friends(userName=msg['FromUserName']).get('NickName', 'Unknown')
-    #logging.info('group xxx: {}-{} send: {}'.format(nickName, msg['FromUserName'], msg))
+    groupNmae = itchat.search_chatrooms(userName=msg['FromUserName']).get('NickName')
+    logging.info('group {}-{}: {}-{}: send {}'.format(
+        groupNmae, msg['FromUserName'], msg['ActualNickName'], msg['ActualUserName'], msg['Content']))
+
     if msg['Text'][0] == interpreter.PY_SYMBLOE:
         replay_text = interpreter.run_py_cmd(msg['Text'][1:])
-        itchat.send(replay_text, msg['FromUserName'])
     elif msg['isAt']:
-        replay_text = tuling.replay_text(msg['Text'],
-                msg['ActualNickName']) or REPLAY_ERROR_TEXT
+        replay_text = tuling.replay_text(msg['Text'], msg['ActualNickName']) or REPLAY_ERROR_TEXT
+    else:
+        replay_text = ''
+
+    if replay_text:
         itchat.send(replay_text, msg['FromUserName'])
 
 

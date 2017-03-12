@@ -8,7 +8,7 @@ class FAQ(object):
 
     def __init__(self, *args, **kwargs):
         super(FAQ, self).__init__()
-        self._friend_welcome = kwargs.get('friend_welcome', u'你好')
+        self._friend_welcome = kwargs.get('friend_welcome', '' )
         self._group_info = kwargs.get('group_info', {})
 
     @property
